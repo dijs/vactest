@@ -10,8 +10,7 @@ var bot = new Roomba({
   update_freq: 500
 });
 
-bot.once('ready', function() {
-  console.log('bot is ready');
+function test() {
   console.log('stopping spin');
   bot.send({
     cmd: 'DRIVE',
@@ -30,6 +29,11 @@ bot.once('ready', function() {
     cmd: 'PLAY',
     data: [1]
   });
+}
+
+bot.once('ready', function() {
+  console.log('bot is ready');
+  setTimeout(test, 2000);
 });
 
 bot.on('sense', function(sensors) {
