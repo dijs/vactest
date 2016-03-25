@@ -11,11 +11,11 @@ var bot = new Roomba({
 });
 
 function test() {
-  console.log('stopping spin');
-  bot.send({
-    cmd: 'DRIVE',
-    data: [0, -1]
-  });
+  // console.log('stopping spin');
+  // bot.send({
+  //   cmd: 'DRIVE',
+  //   data: [0, -1]
+  // });
   console.log('sending song');
   bot.send({
     cmd: 'SONG',
@@ -33,7 +33,7 @@ function test() {
 
 bot.once('ready', function() {
   console.log('bot is ready');
-  setTimeout(test, 2000);
+  // setTimeout(test, 2000);
 });
 
 bot.on('sense', function(sensors) {
@@ -41,9 +41,10 @@ bot.on('sense', function(sensors) {
   if (sensors.bump.right || sensors.bump.left) {
     console.log('bump detected');
     // stop spinning
-    bot.send({
-      cmd: 'DRIVE',
-      data: [0, -1]
-    });
+    // bot.send({
+    //   cmd: 'DRIVE',
+    //   data: [0, -1]
+    // });
+    test();
   }
 });
