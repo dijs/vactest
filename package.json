@@ -9,6 +9,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "roomba": "0.0.1"
+    "create-oi": "0.0.4",
   }
 }
