@@ -7,7 +7,7 @@ var bot = new Roomba({
       baudrate: 57600
     }
   },
-  update_freq: 500
+  update_freq: 200
 });
 
 function test() {
