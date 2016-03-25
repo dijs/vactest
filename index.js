@@ -7,7 +7,7 @@ var bot = new Roomba({
       baudrate: 57600
     }
   },
-  update_freq: 200
+  update_freq: 500
 });
 
 function test() {
@@ -34,17 +34,19 @@ function test() {
 bot.once('ready', function() {
   console.log('bot is ready');
   // setTimeout(test, 2000);
-});
+  //
 
-bot.on('sense', function(sensors) {
-  console.log('sensing something');
-  if (sensors.bump.right || sensors.bump.left) {
-    console.log('bump detected');
-    // stop spinning
-    // bot.send({
-    //   cmd: 'DRIVE',
-    //   data: [0, -1]
-    // });
-    test();
-  }
+  bot.on('sense', function(sensors) {
+    console.log('sensing something');
+    if (sensors.bump.right || sensors.bump.left) {
+      console.log('bump detected');
+      // stop spinning
+      // bot.send({
+      //   cmd: 'DRIVE',
+      //   data: [0, -1]
+      // });
+      test();
+    }
+  });
+
 });
