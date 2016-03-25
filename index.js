@@ -2,7 +2,7 @@ var Roomba = require('roomba').Roomba;
 
 var bot = new Roomba({
   sp: {
-    path: '/dev/ttyAMA0',
+    path: '/dev/ttyUSB0',
     options: {
       baudrate: 57600
     }
