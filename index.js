@@ -1,7 +1,8 @@
 var robot = require('create-oi');
 
 robot.init({
-  serialport: '/dev/ttyUSB0'
+  // serialport: '/dev/ttyUSB0'
+  serialport: '/dev/ttyAMA0'
 });
 
 robot.on('bump', function(bumpEvent) {
