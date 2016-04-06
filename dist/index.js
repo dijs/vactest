@@ -1,19 +1,29 @@
 'use strict';
 
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.serialOpen = serialOpen;
+exports.serialClose = serialClose;
+exports.serialWrite = serialWrite;
+exports.wait = wait;
+exports.safeMode = safeMode;
+exports.passiveMode = passiveMode;
+exports.programSong = programSong;
+exports.playSong = playSong;
+
 require('babel-polyfill');
 
 var _serialport = require('serialport');
 
 var _os = require('os');
 
-// import promisify from 'es6-promisify';
-
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
 
 var LINUX_PORT = '/dev/ttyUSB0';
 var OSX_PORT = '/dev/tty.usbserial-DA01NNR3';
 var CREATE_2_BAUDRATE = 115200;
 var port = (0, _os.platform)() === 'darwin' ? OSX_PORT : LINUX_PORT;
-
 var Command = {
   START: 0x80,
   SAFE: 0x83,
@@ -30,80 +40,68 @@ var serialPort = new _serialport.SerialPort(port, {
   baudrate: CREATE_2_BAUDRATE
 }, false); // this is the openImmediately flag [default is true]
 
-var serialOpen = function serialOpen() {
+function serialOpen() {
   return new Promise(function (resolve, reject) {
     serialPort.open(function (err) {
       return err ? reject(err) : resolve();
     });
   });
-};
+}
 
-var serialClose = function serialClose() {
+function serialClose() {
   return new Promise(function (resolve, reject) {
     serialPort.close(function (err) {
       return err ? reject(err) : resolve();
     });
   });
-};
+}
 
-var serialWrite = function serialWrite(data) {
+function serialWrite(command, data) {
+  var buffer = [command].concat(data || []);
   return new Promise(function (resolve, reject) {
-    serialPort.write(data, function (err, result) {
+    serialPort.write(buffer, function (err, result) {
       return err ? reject(err) : resolve(result);
     });
   });
-};
+}
 
-var wait = function wait(ms) {
-  // new Promise(resolve => setTimeout(resolve, ms))
-  return Promise.resolve(ms).then(function (value) {
-    return new Promise(function (resolve) {
-      return setTimeout(function () {
-        return resolve();
-      }, ms);
-    });
+function wait(ms) {
+  return new Promise(function (resolve) {
+    return setTimeout(resolve, ms);
   });
-};
-//
-// console.log('hello');
-// wait(1000)
-//   .then(() => console.log('goodbye'))
-//   .then(() => wait(1000))
-//   .then(() => console.log('goodbye again'))
+}
 
-serialOpen().then(function () {
-  return console.log('open');
-}).then(function () {
-  return wait(500);
-}).then(function () {
-  return console.log('starting safe mode');
-}).then(function () {
+function safeMode() {
+  console.log('starting safe mode');
   return serialWrite(Command.SAFE);
-}).then(function () {
-  return console.log('closing');
-}).then(function () {
-  return wait(1000);
-}).then(function () {
-  return serialClose();
-}).then(function () {
-  return console.log('closed');
-}).catch(function (err) {
-  return console.error(err.stack);
-});
+}
 
-// serialPort.open(function(error) {
-//   if (error) {
-//     console.log('failed to open: ' + error);
-//   } else {
-//     console.log('open');
-//     serialPort.on('data', function(data) {
-//       // console.log('data received: ' + data);
-//     });
-//     serialPort.write("ls\n", function(err, results) {
-//       if (err) {
-//         console.log('err ' + err);
-//       }
-//       console.log('results ' + results);
-//     });
-//   }
-// });
+function passiveMode() {
+  console.log('starting passive mode');
+  return serialWrite(Command.START);
+}
+
+// Maybe move this out into its own file... or a music file
+// http://www.irobotweb.com/~/media/MainSite/PDFs/About/STEM/Create/iRobot_Roomba_600_Open_Interface_Spec.pdf?la=en
+function programSong(songNumber, notes, durations) {
+  if (notes.length !== durations.length) {
+    throw new Error('Notes and durations must be of the same length');
+  }
+  if (notes.length > 16) {
+    throw new Error('Songs are limited to 16 notes');
+  }
+  var song = Array(notes.length * 2).fill().map(function (_, i) {
+    return i % 2 === 0 ? notes[i / 2] : durations[(i - 1) / 2];
+  });
+  console.log('programming song ' + songNumber + ' with ' + notes.length + ' notes');
+  return serialWrite(Command.SONG, [songNumber, notes.length].concat(_toConsumableArray(song)));
+}
+
+function playSong(songNumber) {
+  if (songNumber < 0 || songNumber > 4) {
+    throw new Error('Song number can be (0-4)');
+  }
+  console.log('playing song ' + songNumber);
+  return serialWrite(Command.PLAY, [songNumber]);
+  // Find a way to wait the correct time here maybe...
+}

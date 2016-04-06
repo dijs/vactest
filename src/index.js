@@ -1,5 +1,4 @@
 import 'babel-polyfill'
-// import promisify from 'es6-promisify';
 import {SerialPort} from 'serialport'
 import {platform} from 'os'
 
@@ -7,7 +6,6 @@ const LINUX_PORT = '/dev/ttyUSB0'
 const OSX_PORT = '/dev/tty.usbserial-DA01NNR3'
 const CREATE_2_BAUDRATE = 115200
 const port = platform() === 'darwin' ? OSX_PORT : LINUX_PORT
-
 const Command = {
     START: 0x80,
     SAFE: 0x83,
@@ -18,70 +16,66 @@ const Command = {
     PLAY: 0x8D,
     STREAM: 0x94,
     SENSORS: 0x8E
-};
+}
 
 const serialPort = new SerialPort(port, {
   baudrate: CREATE_2_BAUDRATE
-}, false); // this is the openImmediately flag [default is true]
+}, false) // this is the openImmediately flag [default is true]
 
-const serialOpen = () => {
+export function serialOpen() {
   return new Promise((resolve, reject) => {
     serialPort.open(err => err ? reject(err) : resolve())
   })
 }
 
-const serialClose = () => {
+export function serialClose() {
   return new Promise((resolve, reject) => {
     serialPort.close(err => err ? reject(err) : resolve())
   })
 }
 
-const serialWrite = data => {
+export function serialWrite(command, data) {
+  const buffer = [command].concat(data || [])
   return new Promise((resolve, reject) => {
-    serialPort.write(data, (err, result) => err ? reject(err) : resolve(result))
+    serialPort.write(buffer, (err, result) => err ? reject(err) : resolve(result))
   })
 }
 
-const wait = ms => {
-  // new Promise(resolve => setTimeout(resolve, ms))
-  return Promise
-    .resolve(ms)
-    .then(value => {
-      return new Promise(resolve => setTimeout(() => resolve(), ms))
-    })
+export function wait(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms))
 }
-//
-// console.log('hello');
-// wait(1000)
-//   .then(() => console.log('goodbye'))
-//   .then(() => wait(1000))
-//   .then(() => console.log('goodbye again'))
 
+export function safeMode() {
+  console.log('starting safe mode')
+  return serialWrite(Command.SAFE)
+}
 
-serialOpen()
-.then(() => console.log('open'))
-.then(() => wait(500))
-.then(() => console.log('starting safe mode'))
-.then(() => serialWrite(Command.SAFE))
-.then(() => console.log('closing'))
-.then(() => wait(1000))
-.then(() => serialClose())
-.then(() => console.log('closed'))
-.catch(err => console.error(err.stack))
+export function passiveMode() {
+  console.log('starting passive mode')
+  return serialWrite(Command.START)
+}
 
-// serialPort.open(function(error) {
-//   if (error) {
-//     console.log('failed to open: ' + error);
-//   } else {
-//     console.log('open');
-//     serialPort.on('data', function(data) {
-//       // console.log('data received: ' + data);
-//     });
-//     serialPort.write("ls\n", function(err, results) {
-//       if (err) {
-//         console.log('err ' + err);
-//       }
-//       console.log('results ' + results);
-//     });
-//   }
-// });
+// Maybe move this out into its own file... or a music file
+// http://www.irobotweb.com/~/media/MainSite/PDFs/About/STEM/Create/iRobot_Roomba_600_Open_Interface_Spec.pdf?la=en
+export function programSong(songNumber, notes, durations) {
+  if (notes.length !== durations.length) {
+    throw new Error('Notes and durations must be of the same length');
+  }
+  if (notes.length > 16) {
+    throw new Error('Songs are limited to 16 notes');
+  }
+  const song = Array(notes.length * 2)
+    .fill()
+    .map((_, i) => i % 2 === 0 ? notes[i / 2] : durations[(i - 1) / 2])
+  console.log(`programming song ${songNumber} with ${notes.length} notes`)
+  return serialWrite(Command.SONG, [songNumber, notes.length, ...song])
+}
+
+export function playSong(songNumber) {
+  if (songNumber < 0 || songNumber > 4) {
+    throw new Error('Song number can be (0-4)');
+  }
+  console.log(`playing song ${songNumber}`)
+  return serialWrite(Command.PLAY, [songNumber])
+  // Find a way to wait the correct time here maybe...
+}
