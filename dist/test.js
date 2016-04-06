@@ -13,12 +13,32 @@ var quarterNote = 1000 / 4;
 var song1Notes = [B, E, B, G, B, E, B, G, B, E, B, G, B, E, B, G];
 var song2Notes = [B, F, B, Gs, B, F, B, Gs, B, F, B, Gs, B, F, B, Gs];
 
-var program = [(0, _index.serialOpen)(), (0, _index.safeMode)(), (0, _index.programSong)(0, song1Notes, Array(song1Notes.length).fill(16)), (0, _index.programSong)(1, song2Notes, Array(song2Notes.length).fill(16)), (0, _index.playSong)(0), (0, _index.wait)(quarterNote * song1Notes.length + 10), (0, _index.playSong)(1), (0, _index.wait)(quarterNote * song2Notes.length + 10), (0, _index.passiveMode)(), (0, _index.serialClose)()];
-
-program.reduce(function (previous, next) {
-  return previous.then(function () {
-    return next;
-  });
-}, Promise.resolve()).catch(function (err) {
-  return console.error(err.stack);
+(0, _index.serialOpen)().then(function () {
+  return (0, _index.wait)(1000);
+}).then(function () {
+  return (0, _index.safeMode)();
+}).then(function () {
+  return (0, _index.wait)(1000);
+}).then(function () {
+  return (0, _index.programSong)(0, song1Notes, Array(song1Notes.length).fill(16));
+}).then(function () {
+  return (0, _index.wait)(1000);
+}).then(function () {
+  return (0, _index.programSong)(1, song2Notes, Array(song2Notes.length).fill(16));
+}).then(function () {
+  return (0, _index.wait)(1000);
+}).then(function () {
+  return (0, _index.playSong)(0);
+}).then(function () {
+  return (0, _index.wait)(quarterNote * song1Notes.length + 10);
+}).then(function () {
+  return (0, _index.playSong)(1);
+}).then(function () {
+  return (0, _index.wait)(quarterNote * song2Notes.length + 10);
+}).then(function () {
+  return (0, _index.passiveMode)();
+}).then(function () {
+  return (0, _index.wait)(1000);
+}).then(function () {
+  return (0, _index.serialClose)();
 });

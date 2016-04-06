@@ -2,10 +2,13 @@ import 'babel-polyfill'
 import {SerialPort} from 'serialport'
 import {platform} from 'os'
 
+// TODO: There may be a way to look for these...
 const LINUX_PORT = '/dev/ttyUSB0'
 const OSX_PORT = '/dev/tty.usbserial-DA01NNR3'
-const CREATE_2_BAUDRATE = 115200
 const port = platform() === 'darwin' ? OSX_PORT : LINUX_PORT
+
+// TODO: Create a constants file later...
+const CREATE_2_BAUDRATE = 115200
 const Command = {
     START: 0x80,
     SAFE: 0x83,
@@ -17,6 +20,11 @@ const Command = {
     STREAM: 0x94,
     SENSORS: 0x8E
 }
+
+// TODO: Build wait times into the commands (since they are required)
+// TODO: Only export the useable methods, not the raw communication methods...
+// TODO: Add eslint
+// TODO: Push this to npm when done with testing
 
 const serialPort = new SerialPort(port, {
   baudrate: CREATE_2_BAUDRATE
@@ -79,3 +87,9 @@ export function playSong(songNumber) {
   return serialWrite(Command.PLAY, [songNumber])
   // Find a way to wait the correct time here maybe...
 }
+
+// TODO: Way down the line... allow users to play MIDI files somehow.
+// - Choose one instrument (argument) -> must be linear...
+// - Convert notes to roomba notes
+// - Break into songs
+// - Program/Play songs in sequence
