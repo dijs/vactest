@@ -1,4 +1,4 @@
-import 'babel-polyfill'
+// import 'babel-polyfill'
 import {SerialPort} from 'serialport'
 import {platform} from 'os'
 
@@ -13,13 +13,18 @@ const Command = {
     START: 0x80,
     SAFE: 0x83,
     DRIVE: 0x89,
-    DRIVE_DIRECT: 0x91,
     LED: 0x8B,
     SONG: 0x8C,
     PLAY: 0x8D,
     STREAM: 0x94,
-    SENSORS: 0x8E
+    SENSORS: 0x8E,
+    CLEAN: 0x87,
+    SEEK_DOCK: 0x8F
 }
+
+const STRAIGHT = 32768;
+const CLOCKWISE = -1;
+const COUNTER_CLOCKWISE = 1;
 
 // TODO: Build wait times into the commands (since they are required)
 // TODO: Only export the useable methods, not the raw communication methods...
@@ -61,6 +66,56 @@ export function safeMode() {
 export function passiveMode() {
   console.log('starting passive mode')
   return serialWrite(Command.START)
+}
+
+/**
+ * Move Roomba Forward
+ * @param  {Number} velocity mm/s
+ * @param  {Number} radius   mm (default is straight)
+ */
+export function moveForward(velocity, radius = STRAIGHT) {
+  if (velocity < -500 || velocity > 500) {
+    throw new Error('Must use velocity between -500 and 500 mm/s');
+  }
+  if (radius !== STRAIGHT && (radius < -2000 || radius > 2000)) {
+    throw new Error('Must use radius between -2000 and 2000 mm');
+  }
+  console.log(`moving forward with velocity ${velocity} and radius ${radius}`);
+  const velocityBuffer = new Buffer(2);
+  velocityBuffer.writeInt16BE(velocity);
+  const radiusBuffer = new Buffer(2);
+  if (radius === STRAIGHT) {
+    radiusBuffer.writeUInt16BE(radius);
+  } else {
+    radiusBuffer.writeInt16BE(radius);
+  }
+  return serialWrite(Command.DRIVE, [...velocityBuffer, ...radiusBuffer]);
+}
+
+/**
+ * Stops all motion
+ */
+export function stopMotion() {
+  console.log('stopping motion');
+  return moveForward(0);
+}
+
+/**
+ * Rotate Roomba clockwise with a specificed velocity
+ * @param  {Number} velocity (default is 100)
+ */
+export function turnClockwise(velocity = 100) {
+  console.log(`rotating clockwise with ${velocity} mm/s velocity`);
+  return moveForward(velocity, CLOCKWISE);
+}
+
+/**
+ * Rotate Roomba counter clockwise with a specificed velocity
+ * @param  {Number} velocity (default is 100)
+ */
+export function turnCounterClockwise(velocity = 100) {
+  console.log(`rotating counter clockwise with ${velocity} mm/s velocity`);
+  return moveForward(velocity, COUNTER_CLOCKWISE);
 }
 
 // Maybe move this out into its own file... or a music file

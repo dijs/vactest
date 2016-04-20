@@ -1,3 +1,20 @@
-// TODO: Move forward for 1 second
-// TODO: Rotate 90 degrees
-// TODO: Move forward for 1 second again
+import {serialOpen, serialClose, wait, safeMode, moveForward, stopMotion, turnClockwise} from './index'
+
+serialOpen()
+  .then(() => wait(1000))
+  .then(() => safeMode())
+  .then(() => wait(1000))
+  .then(() => moveForward(100))
+  .then(() => wait(1000))
+  .then(() => stopMotion())
+  .then(() => turnClockwise())
+  .then(() => wait(1500))
+  .then(() => stopMotion())
+  .then(() => wait(1000))
+  .then(() => moveForward(100))
+  .then(() => wait(1000))
+  .then(() => stopMotion())
+  .then(() => wait(1000))
+  .then(() => serialClose())
+  .catch(e => console.error(e.stack))
+  .then(() => serialClose())
