@@ -1,11 +1,25 @@
-// import 'babel-polyfill'
-import {SerialPort} from 'serialport'
+import 'babel-polyfill'
+import {SerialPort, list} from 'serialport'
 import {platform} from 'os'
 
-// TODO: There may be a way to look for these...
-const LINUX_PORT = '/dev/ttyUSB0'
-const OSX_PORT = '/dev/tty.usbserial-DA01NNR3'
-const port = platform() === 'darwin' ? OSX_PORT : LINUX_PORT
+const log = require('debug')('Vaccom')
+
+function findUsbPort() {
+  return new Promise((resolve, reject) => {
+    list((err, ports) => {
+      if (err) {
+        return reject(err)
+      }
+      const usbComPorts = ports
+        .map(port => port.comName)
+        .filter(name => name.toLowerCase().indexOf('usb') !== -1);
+      if (usbComPorts.length > 0) {
+        return resolve(usbComPorts[0])
+      }
+      return reject(new Error('Could not find USB COM port'))
+    })
+  })
+}
 
 // TODO: Create a constants file later...
 const CREATE_2_BAUDRATE = 115200
@@ -31,13 +45,18 @@ const COUNTER_CLOCKWISE = 1;
 // TODO: Add eslint
 // TODO: Push this to npm when done with testing
 
-const serialPort = new SerialPort(port, {
-  baudrate: CREATE_2_BAUDRATE
-}, false) // this is the openImmediately flag [default is true]
+let serialPort;
 
-export function serialOpen() {
-  return new Promise((resolve, reject) => {
-    serialPort.open(err => err ? reject(err) : resolve())
+export function serialOpen(comPort) {
+  const findPort = comPort ? Promise.resolve(comPort) : findUsbPort()
+  return findPort.then(port => {
+    // Setting global port here for re-use
+    serialPort = new SerialPort(port, {
+      baudrate: CREATE_2_BAUDRATE
+    }, false) // this is the openImmediately flag [default is true]
+    return new Promise((resolve, reject) => {
+      serialPort.open(err => err ? reject(err) : resolve())
+    })
   })
 }
 
@@ -59,12 +78,12 @@ export function wait(ms) {
 }
 
 export function safeMode() {
-  console.log('starting safe mode')
+  log('starting safe mode')
   return serialWrite(Command.SAFE)
 }
 
 export function passiveMode() {
-  console.log('starting passive mode')
+  log('starting passive mode')
   return serialWrite(Command.START)
 }
 
@@ -80,7 +99,7 @@ export function moveForward(velocity, radius = STRAIGHT) {
   if (radius !== STRAIGHT && (radius < -2000 || radius > 2000)) {
     throw new Error('Must use radius between -2000 and 2000 mm');
   }
-  console.log(`moving forward with velocity ${velocity} and radius ${radius}`);
+  log(`moving forward with velocity ${velocity} and radius ${radius}`);
   const velocityBuffer = new Buffer(2);
   velocityBuffer.writeInt16BE(velocity);
   const radiusBuffer = new Buffer(2);
@@ -96,7 +115,7 @@ export function moveForward(velocity, radius = STRAIGHT) {
  * Stops all motion
  */
 export function stopMotion() {
-  console.log('stopping motion');
+  log('stopping motion');
   return moveForward(0);
 }
 
@@ -105,7 +124,7 @@ export function stopMotion() {
  * @param  {Number} velocity (default is 100)
  */
 export function turnClockwise(velocity = 100) {
-  console.log(`rotating clockwise with ${velocity} mm/s velocity`);
+  log(`rotating clockwise with ${velocity} mm/s velocity`);
   return moveForward(velocity, CLOCKWISE);
 }
 
@@ -114,7 +133,7 @@ export function turnClockwise(velocity = 100) {
  * @param  {Number} velocity (default is 100)
  */
 export function turnCounterClockwise(velocity = 100) {
-  console.log(`rotating counter clockwise with ${velocity} mm/s velocity`);
+  log(`rotating counter clockwise with ${velocity} mm/s velocity`);
   return moveForward(velocity, COUNTER_CLOCKWISE);
 }
 
@@ -130,7 +149,7 @@ export function programSong(songNumber, notes, durations) {
   const song = Array(notes.length * 2)
     .fill()
     .map((_, i) => i % 2 === 0 ? notes[i / 2] : durations[(i - 1) / 2])
-  console.log(`programming song ${songNumber} with ${notes.length} notes`)
+  log(`programming song ${songNumber} with ${notes.length} notes`)
   return serialWrite(Command.SONG, [songNumber, notes.length, ...song])
 }
 
@@ -138,7 +157,7 @@ export function playSong(songNumber) {
   if (songNumber < 0 || songNumber > 4) {
     throw new Error('Song number can be (0-4)');
   }
-  console.log(`playing song ${songNumber}`)
+  log(`playing song ${songNumber}`)
   return serialWrite(Command.PLAY, [songNumber])
   // Find a way to wait the correct time here maybe...
 }

@@ -9,6 +9,10 @@ exports.serialWrite = serialWrite;
 exports.wait = wait;
 exports.safeMode = safeMode;
 exports.passiveMode = passiveMode;
+exports.moveForward = moveForward;
+exports.stopMotion = stopMotion;
+exports.turnClockwise = turnClockwise;
+exports.turnCounterClockwise = turnCounterClockwise;
 exports.programSong = programSong;
 exports.playSong = playSong;
 
@@ -20,30 +24,64 @@ var _os = require('os');
 
 function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
 
-var LINUX_PORT = '/dev/ttyUSB0';
-var OSX_PORT = '/dev/tty.usbserial-DA01NNR3';
+var log = require('debug')('Vaccom');
+
+function findUsbPort() {
+  return new Promise(function (resolve, reject) {
+    (0, _serialport.list)(function (err, ports) {
+      if (err) {
+        return reject(err);
+      }
+      var usbComPorts = ports.map(function (port) {
+        return port.comName;
+      }).filter(function (name) {
+        return name.toLowerCase().indexOf('usb') !== -1;
+      });
+      if (usbComPorts.length > 0) {
+        return resolve(usbComPorts[0]);
+      }
+      return reject(new Error('Could not find USB COM port'));
+    });
+  });
+}
+
+// TODO: Create a constants file later...
 var CREATE_2_BAUDRATE = 115200;
-var port = (0, _os.platform)() === 'darwin' ? OSX_PORT : LINUX_PORT;
 var Command = {
   START: 0x80,
   SAFE: 0x83,
   DRIVE: 0x89,
-  DRIVE_DIRECT: 0x91,
   LED: 0x8B,
   SONG: 0x8C,
   PLAY: 0x8D,
   STREAM: 0x94,
-  SENSORS: 0x8E
+  SENSORS: 0x8E,
+  CLEAN: 0x87,
+  SEEK_DOCK: 0x8F
 };
 
-var serialPort = new _serialport.SerialPort(port, {
-  baudrate: CREATE_2_BAUDRATE
-}, false); // this is the openImmediately flag [default is true]
+var STRAIGHT = 32768;
+var CLOCKWISE = -1;
+var COUNTER_CLOCKWISE = 1;
 
-function serialOpen() {
-  return new Promise(function (resolve, reject) {
-    serialPort.open(function (err) {
-      return err ? reject(err) : resolve();
+// TODO: Build wait times into the commands (since they are required)
+// TODO: Only export the useable methods, not the raw communication methods...
+// TODO: Add eslint
+// TODO: Push this to npm when done with testing
+
+var serialPort = void 0;
+
+function serialOpen(comPort) {
+  var findPort = comPort ? Promise.resolve(comPort) : findUsbPort();
+  return findPort.then(function (port) {
+    // Setting global port here for re-use
+    serialPort = new _serialport.SerialPort(port, {
+      baudrate: CREATE_2_BAUDRATE
+    }, false); // this is the openImmediately flag [default is true]
+    return new Promise(function (resolve, reject) {
+      serialPort.open(function (err) {
+        return err ? reject(err) : resolve();
+      });
     });
   });
 }
@@ -72,13 +110,69 @@ function wait(ms) {
 }
 
 function safeMode() {
-  console.log('starting safe mode');
+  log('starting safe mode');
   return serialWrite(Command.SAFE);
 }
 
 function passiveMode() {
-  console.log('starting passive mode');
+  log('starting passive mode');
   return serialWrite(Command.START);
+}
+
+/**
+ * Move Roomba Forward
+ * @param  {Number} velocity mm/s
+ * @param  {Number} radius   mm (default is straight)
+ */
+function moveForward(velocity) {
+  var radius = arguments.length <= 1 || arguments[1] === undefined ? STRAIGHT : arguments[1];
+
+  if (velocity < -500 || velocity > 500) {
+    throw new Error('Must use velocity between -500 and 500 mm/s');
+  }
+  if (radius !== STRAIGHT && (radius < -2000 || radius > 2000)) {
+    throw new Error('Must use radius between -2000 and 2000 mm');
+  }
+  log('moving forward with velocity ' + velocity + ' and radius ' + radius);
+  var velocityBuffer = new Buffer(2);
+  velocityBuffer.writeInt16BE(velocity);
+  var radiusBuffer = new Buffer(2);
+  if (radius === STRAIGHT) {
+    radiusBuffer.writeUInt16BE(radius);
+  } else {
+    radiusBuffer.writeInt16BE(radius);
+  }
+  return serialWrite(Command.DRIVE, [].concat(_toConsumableArray(velocityBuffer), _toConsumableArray(radiusBuffer)));
+}
+
+/**
+ * Stops all motion
+ */
+function stopMotion() {
+  log('stopping motion');
+  return moveForward(0);
+}
+
+/**
+ * Rotate Roomba clockwise with a specificed velocity
+ * @param  {Number} velocity (default is 100)
+ */
+function turnClockwise() {
+  var velocity = arguments.length <= 0 || arguments[0] === undefined ? 100 : arguments[0];
+
+  log('rotating clockwise with ' + velocity + ' mm/s velocity');
+  return moveForward(velocity, CLOCKWISE);
+}
+
+/**
+ * Rotate Roomba counter clockwise with a specificed velocity
+ * @param  {Number} velocity (default is 100)
+ */
+function turnCounterClockwise() {
+  var velocity = arguments.length <= 0 || arguments[0] === undefined ? 100 : arguments[0];
+
+  log('rotating counter clockwise with ' + velocity + ' mm/s velocity');
+  return moveForward(velocity, COUNTER_CLOCKWISE);
 }
 
 // Maybe move this out into its own file... or a music file
@@ -93,7 +187,7 @@ function programSong(songNumber, notes, durations) {
   var song = Array(notes.length * 2).fill().map(function (_, i) {
     return i % 2 === 0 ? notes[i / 2] : durations[(i - 1) / 2];
   });
-  console.log('programming song ' + songNumber + ' with ' + notes.length + ' notes');
+  log('programming song ' + songNumber + ' with ' + notes.length + ' notes');
   return serialWrite(Command.SONG, [songNumber, notes.length].concat(_toConsumableArray(song)));
 }
 
@@ -101,7 +195,13 @@ function playSong(songNumber) {
   if (songNumber < 0 || songNumber > 4) {
     throw new Error('Song number can be (0-4)');
   }
-  console.log('playing song ' + songNumber);
+  log('playing song ' + songNumber);
   return serialWrite(Command.PLAY, [songNumber]);
   // Find a way to wait the correct time here maybe...
 }
+
+// TODO: Way down the line... allow users to play MIDI files somehow.
+// - Choose one instrument (argument) -> must be linear...
+// - Convert notes to roomba notes
+// - Break into songs
+// - Program/Play songs in sequence

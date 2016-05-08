@@ -6,12 +6,14 @@
   "scripts": {
     "build": "babel src -d dist",
     "start": "node dist/test",
-    "watch": "nodemon --exec 'npm run build && npm start' --watch src"
+    "watch": "nodemon --exec 'npm run build && npm start' --watch src",
+    "tests": "npm run build && node dist/music-test && node dist/movement-test"
   },
   "author": "Richard van der Dys",
   "license": "MIT",
   "dependencies": {
     "babel-polyfill": "^6.7.4",
+    "debug": "^2.2.0",
     "serialport": "^2.0.6"
   },
   "devDependencies": {
