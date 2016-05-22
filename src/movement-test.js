@@ -1,4 +1,4 @@
-import {serialOpen, serialClose, wait, safeMode, moveForward, stopMotion, turnClockwise} from './index'
+import {serialOpen, serialClose, wait, safeMode, moveForward, stopMotion, turnClockwise} from 'vaccom'
 
 serialOpen()
   .then(() => wait(1000))

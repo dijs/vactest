@@ -1,39 +1,39 @@
 'use strict';
 
-var _index = require('./index');
+var _vaccom = require('vaccom');
 
-(0, _index.serialOpen)().then(function () {
-  return (0, _index.wait)(1000);
+(0, _vaccom.serialOpen)().then(function () {
+  return (0, _vaccom.wait)(1000);
 }).then(function () {
-  return (0, _index.safeMode)();
+  return (0, _vaccom.safeMode)();
 }).then(function () {
-  return (0, _index.wait)(1000);
+  return (0, _vaccom.wait)(1000);
 }).then(function () {
-  return (0, _index.moveForward)(100);
+  return (0, _vaccom.moveForward)(100);
 }).then(function () {
-  return (0, _index.wait)(1000);
+  return (0, _vaccom.wait)(1000);
 }).then(function () {
-  return (0, _index.stopMotion)();
+  return (0, _vaccom.stopMotion)();
 }).then(function () {
-  return (0, _index.turnClockwise)();
+  return (0, _vaccom.turnClockwise)();
 }).then(function () {
-  return (0, _index.wait)(1500);
+  return (0, _vaccom.wait)(1500);
 }).then(function () {
-  return (0, _index.stopMotion)();
+  return (0, _vaccom.stopMotion)();
 }).then(function () {
-  return (0, _index.wait)(1000);
+  return (0, _vaccom.wait)(1000);
 }).then(function () {
-  return (0, _index.moveForward)(100);
+  return (0, _vaccom.moveForward)(100);
 }).then(function () {
-  return (0, _index.wait)(1000);
+  return (0, _vaccom.wait)(1000);
 }).then(function () {
-  return (0, _index.stopMotion)();
+  return (0, _vaccom.stopMotion)();
 }).then(function () {
-  return (0, _index.wait)(1000);
+  return (0, _vaccom.wait)(1000);
 }).then(function () {
-  return (0, _index.serialClose)();
+  return (0, _vaccom.serialClose)();
 }).catch(function (e) {
   return console.error(e.stack);
 }).then(function () {
-  return (0, _index.serialClose)();
+  return (0, _vaccom.serialClose)();
 });

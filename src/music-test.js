@@ -1,4 +1,5 @@
-import {serialOpen, serialClose, wait, serialWrite, safeMode, passiveMode, programSong, playSong} from './index'
+import {serialOpen, serialClose, wait, serialWrite, safeMode,
+  passiveMode, programSong, playSong} from 'vaccom'
 
 const B = 71
 const E = 71 + 4

@@ -12,9 +12,7 @@
   "author": "Richard van der Dys",
   "license": "MIT",
   "dependencies": {
-    "babel-polyfill": "^6.7.4",
-    "debug": "^2.2.0",
-    "serialport": "^2.0.6"
+    "vaccom": "^1.0.5"
   },
   "devDependencies": {
     "babel-cli": "^6.6.5",
